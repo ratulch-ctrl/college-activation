@@ -1,0 +1,155 @@
+erDiagram
+    CITY ||--o{ BRANCH : has
+    CITY ||--o{ TEAM_MEMBER : based_in
+    CITY ||--o{ COLLEGE : located_in
+    CITY ||--o{ EVENT : hosts
+
+    BRANCH ||--o{ TEAM_MEMBER : staffs
+    BRANCH ||--o{ WEEKLY_AGENT_METRIC : logs
+
+    TEAM_MEMBER ||--o{ TEAM_MEMBER : manages
+    TEAM_MEMBER ||--o{ COLLEGE : owns
+    TEAM_MEMBER ||--o{ COLLEGE_STREAM : owns
+    TEAM_MEMBER ||--o{ INTERACTION : logs
+    TEAM_MEMBER ||--o{ EVENT : owns
+    TEAM_MEMBER ||--o{ EVENT_ASSIGNEE : accompanies
+    TEAM_MEMBER ||--o{ SPEAKER : is
+    TEAM_MEMBER ||--o{ WEEKLY_AGENT_METRIC : measured_by
+
+    COLLEGE ||--o{ COLLEGE_STREAM : has
+    COLLEGE ||--o{ COLLEGE_CONTACT : has
+    COLLEGE ||--o{ INTERACTION : receives
+    COLLEGE ||--o{ EVENT : hosts
+
+    COLLEGE_STREAM ||--o{ COLLEGE_CONTACT : stream_contact
+    COLLEGE_STREAM ||--o{ INTERACTION_STREAM : tagged_in
+    COLLEGE_STREAM ||--o{ EVENT_STREAM : covered_by
+    COLLEGE_CONTACT ||--o{ COLLEGE_STREAM : primary_for
+    COLLEGE_CONTACT ||--o{ INTERACTION_CONTACT : spoken_to
+
+    INTERACTION ||--o{ INTERACTION_STREAM : includes
+    INTERACTION ||--o{ INTERACTION_CONTACT : includes
+
+    EVENT ||--o{ EVENT_STREAM : spans
+    EVENT ||--o{ EVENT_SPEAKER : presented_by
+    EVENT ||--o{ EVENT_ASSIGNEE : supported_by
+    SPEAKER ||--o{ EVENT_SPEAKER : speaks_at
+
+    CITY {
+        int id PK
+        text name
+    }
+    BRANCH {
+        int id PK
+        int city_id FK
+        text name
+    }
+    TEAM_MEMBER {
+        int id PK
+        enum role
+        int city_id FK
+        int branch_id FK
+        int manager_id FK
+    }
+    SPEAKER {
+        int id PK
+        text name
+        enum type
+        text organization
+        int team_member_id FK
+    }
+    COLLEGE {
+        int id PK
+        text name
+        int city_id FK
+        enum category
+        enum engagement_scope
+        bool is_paid_partner
+        int owner_bdm_id FK
+    }
+    COLLEGE_STREAM {
+        int id PK
+        int college_id FK
+        text stream_name
+        enum stage
+        bool is_active
+        int final_year_strength
+        int pre_final_year_strength
+        int owner_bdm_id FK
+        int primary_contact_id FK
+        text current_next_step
+        date next_action_date
+    }
+    COLLEGE_CONTACT {
+        int id PK
+        int college_id FK
+        int college_stream_id FK
+        enum role
+        bool is_primary
+    }
+    INTERACTION {
+        int id PK
+        int college_id FK
+        int team_member_id FK
+        date interaction_date
+        enum channel
+        bool all_streams
+        text summary
+        enum resulting_stage
+        date next_action_date
+    }
+    INTERACTION_STREAM {
+        int interaction_id FK
+        int college_stream_id FK
+    }
+    INTERACTION_CONTACT {
+        int interaction_id FK
+        int contact_id FK
+    }
+    STAGE_FIELD_REQUIREMENT {
+        int id PK
+        enum stage
+        enum applies_to
+        text field_key
+        bool is_required
+    }
+    EVENT {
+        int id PK
+        int college_id FK
+        int city_id FK
+        int owner_bdm_id FK
+        enum activity_type
+        enum target_year
+        date scheduled_date
+        time start_time
+        time end_time
+        enum status
+        int tpo_promised_count
+        bool lab_or_laptop_confirmed
+        int actual_attended
+        int forms_collected
+        int prospects_count
+        int walkins_count
+    }
+    EVENT_STREAM {
+        int event_id FK
+        int college_stream_id FK
+    }
+    EVENT_SPEAKER {
+        int event_id FK
+        int speaker_id FK
+        bool is_lead
+    }
+    EVENT_ASSIGNEE {
+        int event_id FK
+        int team_member_id FK
+        text role_at_event
+    }
+    WEEKLY_AGENT_METRIC {
+        int id PK
+        int team_member_id FK
+        int branch_id FK
+        date week_start_date
+        int target_walkins
+        int actual_walkins
+    }
