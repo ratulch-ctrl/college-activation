@@ -5,7 +5,9 @@
 -- Core ideas in v2:
 --  * The pipeline lives on the STREAM, not the college. Each (college, stream)
 --    has its own stage, owner, batch strength and next step.
---  * A college-level engagement_scope marks ALL_STREAMS vs SELECTED_STREAMS.
+--  * A college is considered "activated" once any one of its streams has
+--    moved past IDENTIFIED — this is DERIVED (see v_college_rollup.is_activated),
+--    not a stored column, so it can never drift out of sync with stream data.
 --  * `interactions` is the day-to-day activity log (raw updates); each entry
 --    tags the stream(s) and contact(s) involved and can advance a stage.
 --  * `stage_field_requirements` drives the dynamic per-stage forms.
@@ -16,7 +18,8 @@
 -- ---------- Enums ----------------------------------------------------------
 CREATE TYPE team_role         AS ENUM ('MANAGER','BDM','BRANCH_EXECUTIVE','COUNSELOR','EC','VP');
 CREATE TYPE college_category  AS ENUM ('ENGINEERING','DEGREE','MANAGEMENT','UNIVERSITY','OTHER');
-CREATE TYPE engagement_scope  AS ENUM ('ALL_STREAMS','SELECTED_STREAMS');
+CREATE TYPE internal_priority_tier AS ENUM ('A','B','C');
+CREATE TYPE competitor_strength AS ENUM ('STRONG','MODERATE','WEAK');
 CREATE TYPE stream_stage      AS ENUM ('IDENTIFIED','CONTACTED','IN_DISCUSSION','AGREED','CONFIRMED','COMPLETED','DORMANT','REJECTED');
 CREATE TYPE contact_role      AS ENUM ('TPO','HOD','PRINCIPAL','PLACEMENT_COORDINATOR','FACULTY','OTHER');
 CREATE TYPE interaction_channel AS ENUM ('VISIT','CALL','EMAIL','WHATSAPP','OTHER');
@@ -70,20 +73,31 @@ CREATE TABLE speakers (
 
 -- ---------- Colleges, streams, contacts ------------------------------------
 CREATE TABLE colleges (
-    id                SERIAL PRIMARY KEY,
-    name              TEXT NOT NULL,
-    city_id           INTEGER NOT NULL REFERENCES cities(id),
-    category          college_category NOT NULL DEFAULT 'OTHER',
-    engagement_scope  engagement_scope NOT NULL DEFAULT 'SELECTED_STREAMS',  -- all vs specific streams
-    is_paid_partner   BOOLEAN NOT NULL DEFAULT FALSE,
-    owner_bdm_id      INTEGER REFERENCES team_members(id),
-    address           TEXT,
-    website           TEXT,
-    notes             TEXT,
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id                     SERIAL PRIMARY KEY,
+    name                   TEXT NOT NULL,
+    city_id                INTEGER NOT NULL REFERENCES cities(id),
+    category               college_category NOT NULL DEFAULT 'OTHER',
+    owner_bdm_id           INTEGER REFERENCES team_members(id),
+    google_maps_link       TEXT,                          -- field-nav link
+    affiliation            TEXT,                          -- e.g. "Autonomous", "Affiliated to VTU"
+    accreditation          TEXT,                          -- official record as reported, e.g. "NAAC A++"
+    internal_priority_tier internal_priority_tier,         -- team's own prioritization tier
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (city_id, name)
 );
+
+-- Structured competitor tracking: multiple competitors per college.
+CREATE TABLE college_competitors (
+    id               SERIAL PRIMARY KEY,
+    college_id       INTEGER NOT NULL REFERENCES colleges(id) ON DELETE CASCADE,
+    competitor_name  TEXT NOT NULL,
+    strength         competitor_strength,
+    active_since     DATE,
+    notes            TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_competitors_college ON college_competitors(college_id);
 
 -- THE PIPELINE UNIT: one row per (college, stream). Stage lives here.
 CREATE TABLE college_streams (
@@ -276,7 +290,8 @@ LEFT JOIN team_members tm ON tm.id = cs.owner_bdm_id;
 
 -- 2. College rollup — stream stage counts per college
 CREATE VIEW v_college_rollup AS
-SELECT c.id, c.name, c.city_id, c.engagement_scope,
+SELECT c.id, c.name, c.city_id,
+       COALESCE(bool_or(cs.stage <> 'IDENTIFIED'), FALSE)        AS is_activated,
        COUNT(cs.id)                                              AS total_streams,
        COUNT(*) FILTER (WHERE cs.is_active)                      AS active_streams,
        COUNT(*) FILTER (WHERE cs.stage = 'CONFIRMED')            AS confirmed_streams,

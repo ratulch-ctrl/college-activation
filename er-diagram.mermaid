@@ -18,6 +18,7 @@ erDiagram
 
     COLLEGE ||--o{ COLLEGE_STREAM : has
     COLLEGE ||--o{ COLLEGE_CONTACT : has
+    COLLEGE ||--o{ COLLEGE_COMPETITOR : tracks
     COLLEGE ||--o{ INTERACTION : receives
     COLLEGE ||--o{ EVENT : hosts
 
@@ -63,9 +64,18 @@ erDiagram
         text name
         int city_id FK
         enum category
-        enum engagement_scope
-        bool is_paid_partner
         int owner_bdm_id FK
+        text google_maps_link
+        text affiliation
+        text accreditation
+        enum internal_priority_tier
+    }
+    COLLEGE_COMPETITOR {
+        int id PK
+        int college_id FK
+        text competitor_name
+        enum strength
+        date active_since
     }
     COLLEGE_STREAM {
         int id PK
