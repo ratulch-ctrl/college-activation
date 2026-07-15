@@ -25,8 +25,11 @@ export const COLLEGE_CATEGORIES = [
 ] as const;
 export type CollegeCategory = (typeof COLLEGE_CATEGORIES)[number];
 
-export const ENGAGEMENT_SCOPES = ['ALL_STREAMS', 'SELECTED_STREAMS'] as const;
-export type EngagementScope = (typeof ENGAGEMENT_SCOPES)[number];
+export const INTERNAL_PRIORITY_TIERS = ['A', 'B', 'C'] as const;
+export type InternalPriorityTier = (typeof INTERNAL_PRIORITY_TIERS)[number];
+
+export const COMPETITOR_STRENGTHS = ['STRONG', 'MODERATE', 'WEAK'] as const;
+export type CompetitorStrength = (typeof COMPETITOR_STRENGTHS)[number];
 
 export const STREAM_STAGES = [
   'IDENTIFIED',
@@ -113,14 +116,23 @@ export interface College {
   name: string;
   city_id: number;
   category: CollegeCategory;
-  engagement_scope: EngagementScope;
-  is_paid_partner: boolean;
   owner_bdm_id: number | null;
-  address: string | null;
-  website: string | null;
-  notes: string | null;
+  google_maps_link: string | null;
+  affiliation: string | null;
+  accreditation: string | null;
+  internal_priority_tier: InternalPriorityTier | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CollegeCompetitor {
+  id: number;
+  college_id: number;
+  competitor_name: string;
+  strength: CompetitorStrength | null;
+  active_since: string | null; // ISO date
+  notes: string | null;
+  created_at: string;
 }
 
 export interface CollegeStream {

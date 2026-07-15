@@ -9,6 +9,7 @@ import type {
   Branch,
   City,
   College,
+  CollegeCompetitor,
   CollegeContact,
   CollegeStream,
   Interaction,
@@ -25,6 +26,7 @@ export type StreamInput = Omit<
   'id' | 'created_at' | 'updated_at' | 'last_interaction_at'
 >;
 export type ContactInput = Omit<CollegeContact, 'id'>;
+export type CompetitorInput = Omit<CollegeCompetitor, 'id' | 'created_at'>;
 
 export interface InteractionInput {
   college_id: number;
@@ -76,6 +78,11 @@ export interface DataBackend {
   createContact(input: ContactInput): Promise<CollegeContact>;
   updateContact(id: number, patch: Partial<ContactInput>): Promise<CollegeContact>;
   deleteContact(id: number): Promise<void>;
+
+  // competitors
+  listCompetitors(collegeId?: number): Promise<CollegeCompetitor[]>;
+  createCompetitor(input: CompetitorInput): Promise<CollegeCompetitor>;
+  deleteCompetitor(id: number): Promise<void>;
 
   // interactions (advances stream stage as a side effect)
   listInteractions(collegeId?: number): Promise<Interaction[]>;

@@ -9,6 +9,7 @@ import type {
   Branch,
   City,
   College,
+  CollegeCompetitor,
   CollegeContact,
   CollegeStream,
   Interaction,
@@ -18,6 +19,7 @@ import type {
 } from '@/lib/types';
 import type {
   CollegeInput,
+  CompetitorInput,
   ContactInput,
   DataBackend,
   InteractionInput,
@@ -28,6 +30,7 @@ import {
   seedBranches,
   seedCities,
   seedColleges,
+  seedCompetitors,
   seedContacts,
   seedInteractions,
   seedStageFieldRequirements,
@@ -42,6 +45,7 @@ interface Store {
   colleges: College[];
   streams: CollegeStream[];
   contacts: CollegeContact[];
+  competitors: CollegeCompetitor[];
   interactions: Interaction[];
   stageFieldRequirements: StageFieldRequirement[];
   seq: number; // next id
@@ -58,6 +62,7 @@ function freshStore(): Store {
     colleges: structuredClone(seedColleges),
     streams: structuredClone(seedStreams),
     contacts: structuredClone(seedContacts),
+    competitors: structuredClone(seedCompetitors),
     interactions: structuredClone(seedInteractions),
     stageFieldRequirements: structuredClone(seedStageFieldRequirements),
     seq: 1000,
@@ -136,6 +141,7 @@ export const mockBackend: DataBackend = {
     const streamIds = s.streams.filter((x) => x.college_id === id).map((x) => x.id);
     s.streams = s.streams.filter((x) => x.college_id !== id);
     s.contacts = s.contacts.filter((x) => x.college_id !== id);
+    s.competitors = s.competitors.filter((x) => x.college_id !== id);
     s.interactions = s.interactions.filter((x) => x.college_id !== id);
     void streamIds;
   },
@@ -202,6 +208,24 @@ export const mockBackend: DataBackend = {
   async deleteContact(id) {
     const s = store();
     s.contacts = s.contacts.filter((x) => x.id !== id);
+  },
+
+  // ---- competitors --------------------------------------------------------
+  async listCompetitors(collegeId) {
+    const rows = store().competitors.filter(
+      (x) => collegeId == null || x.college_id === collegeId,
+    );
+    return clone(rows);
+  },
+  async createCompetitor(input: CompetitorInput) {
+    const s = store();
+    const row: CollegeCompetitor = { ...input, id: s.seq++, created_at: nowIso() };
+    s.competitors.push(row);
+    return clone(row);
+  },
+  async deleteCompetitor(id) {
+    const s = store();
+    s.competitors = s.competitors.filter((x) => x.id !== id);
   },
 
   // ---- interactions -------------------------------------------------------
